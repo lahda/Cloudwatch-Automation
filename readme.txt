@@ -1,105 +1,94 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation Template for AWS Database Migration Workshop.
+# 📌 Automatisation des Sauvegardes GitHub avec AWS CodeBuild et EventBridge
 
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label:
-          default: "Database Migration Workshop Lab Environment"
-        Parameters:
-          - LabType
-      - Label:
-          default: "Amazon EC2 Configuration"
-        Parameters:
-          - EC2ServerInstanceType
-          - KeyName
-      - Label:
-          default: "Target Amazon RDS Database Configuration"
-        Parameters:
-          - RDSInstanceType
-      - Label:
-          default: "Network Configuration"
-        Parameters:
-          - VpcCIDR
+## 📖 Introduction
+Dans un environnement DevOps, l'automatisation des sauvegardes est essentielle pour garantir la sécurité et la disponibilité des données. Ce projet met en place une architecture event-driven qui automatise la sauvegarde des fichiers d’un dépôt GitHub sur Amazon S3 en utilisant AWS CodeBuild et Amazon EventBridge.
 
-Resources:
-  DMSMigrationBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      BucketName: !Sub 'dms-sc-${AWS::AccountId}-${AWS::StackName}'
+## 🏗️ Architecture
+L'architecture repose sur les services AWS suivants :
+- **GitHub** : Dépôt source contenant les fichiers CloudFormation.
+- **Amazon EventBridge** : Détecte les événements `push` du dépôt GitHub et déclenche CodeBuild.
+- **AWS CodeBuild** : Clone le dépôt, archive les fichiers en `.zip` et les stocke dans Amazon S3.
+- **Amazon S3** : Stocke les archives générées pour une récupération ultérieure.
+- **Amazon CloudWatch** : Surveille les logs de l'exécution du processus.
 
-  DmsVpc:
-    Type: AWS::EC2::VPC
-    Properties:
-      EnableDnsSupport: 'true'
-      EnableDnsHostnames: 'true'
-      CidrBlock:
-        Ref: VpcCIDR
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Join:
-          - "-"
-          - - Ref: AWS::StackName
-            - DmsVpc
+## 🔧 Configuration
+### 1️⃣ Prérequis
+- Un compte AWS avec les permissions adéquates.
+- Un dépôt GitHub contenant des fichiers CloudFormation.
+- AWS CLI configuré avec les bonnes permissions.
 
-  Subnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref DmsVpc
-      CidrBlock: !Select [ 0, !Cidr [ !GetAtt DmsVpc.CidrBlock, 3, 8 ]]
-      AvailabilityZone: !Select [0, !GetAZs ]
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Join:
-          - "-"
-          - - Ref: AWS::StackName
-            - Subnet1
+### 2️⃣ Étapes d'installation
+#### 1️⃣ Créer une connexion AWS CodeStar vers GitHub
+1. Accéder à **AWS CodeStar connections**.
+2. Ajouter une nouvelle connexion et sélectionner GitHub.
+3. Autoriser AWS à accéder au dépôt GitHub.
 
-  Subnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref DmsVpc
-      CidrBlock: !Select [ 1, !Cidr [ !GetAtt DmsVpc.CidrBlock, 3, 8 ]]
-      AvailabilityZone: !Select [1, !GetAZs ]
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Join:
-          - "-"
-          - - Ref: AWS::StackName
-            - Subnet2
+#### 2️⃣ Créer un rôle IAM pour CodeBuild
+1. Accéder à **IAM > Rôles**.
+2. Créer un rôle avec les permissions suivantes :
+   ```json
+   {
+     "Effect": "Allow",
+     "Action": [
+       "s3:PutObject",
+       "s3:GetObject",
+       "logs:CreateLogGroup",
+       "logs:CreateLogStream",
+       "logs:PutLogEvents"
+     ],
+     "Resource": "*"
+   }
+   ```
 
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-      - Key: Name
-        Value:
-          Fn::Join:
-          - "-"
-          - - Ref: AWS::StackName
-            - InternetGateway
+#### 3️⃣ Configurer AWS CodeBuild
+1. Accéder à **AWS CodeBuild** et créer un projet.
+2. Sélectionner la connexion CodeStar vers GitHub.
+3. Définir le fichier `buildspec.yml`.
 
-  AttachGateway:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref DmsVpc
-      InternetGatewayId: !Ref InternetGateway
+#### 4️⃣ Créer une règle EventBridge
+1. Accéder à **Amazon EventBridge > Règles**.
+2. Ajouter une règle avec l'événement GitHub `push`.
+3. Définir CodeBuild comme cible.
 
-Outputs:
-  BucketName:
-    Description: "Nom du bucket S3"
-    Value: !Ref DMSMigrationBucket
-  VpcId:
-    Description: "ID du VPC"
-    Value: !Ref DmsVpc
-  Subnet1Id:
-    Description: "ID du premier sous-réseau"
-    Value: !Ref Subnet1
-  Subnet2Id:
-    Description: "ID du deuxième sous-réseau"
-    Value: !Ref Subnet2
+### 3️⃣ Fichier `buildspec.yml`
+```yaml
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  build:
+    commands:
+      - echo "Clonage du dépôt GitHub"
+      - git clone $CODEBUILD_SOURCE_REPO_URL repo
+      - cd repo
+      - zip -r ../backup.zip .
+  post_build:
+    commands:
+      - echo "Upload vers S3"
+      - aws s3 cp ../backup.zip s3://mon-bucket-backup/backup-$(date +%F-%H-%M-%S).zip
+```
+
+## 🚀 Test et Déploiement
+1. Effectuer un `git push` sur le dépôt GitHub.
+2. Vérifier que la règle EventBridge a bien déclenché CodeBuild.
+3. Vérifier que le fichier `.zip` est bien stocké dans S3.
+4. Consulter les logs dans Amazon CloudWatch.
+
+## 🎯 Conclusion
+Cette solution permet d'automatiser la sauvegarde des fichiers CloudFormation stockés sur GitHub vers S3 en utilisant une architecture event-driven. Elle garantit une récupération rapide et sécurisée des fichiers en cas de besoin.
+
+## 📌 Technologies utilisées
+- AWS CodeBuild
+- Amazon EventBridge
+- Amazon S3
+- Amazon CloudWatch
+- GitHub
+
+## 📚 Références
+- [AWS CodeBuild Documentation](https://docs.aws.amazon.com/codebuild/)
+- [Amazon EventBridge Documentation](https://docs.aws.amazon.com/eventbridge/)
+- [AWS IAM Documentation](https://docs.aws.amazon.com/iam/)
+
+## 📢 Hashtags
+`#AWS` `#DevOps` `#Automation` `#GitHub` `#S3` `#CodeBuild` `#EventBridge` `#CloudWatch` `#CloudComputing` `#InfrastructureAsCode`
