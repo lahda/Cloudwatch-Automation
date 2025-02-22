@@ -1,7 +1,9 @@
 # 📌 Automatisation des Sauvegardes GitHub avec AWS CodeBuild et EventBridge
 
 ## 📖 Introduction
-Dans un environnement DevOps, l'automatisation des sauvegardes est essentielle pour garantir la sécurité et la disponibilité des données. Ce projet met en place une architecture event-driven qui automatise la sauvegarde des fichiers d’un dépôt GitHub sur Amazon S3 en utilisant AWS CodeBuild et Amazon EventBridge.
+Dans un environnement DevOps, l'automatisation des sauvegardes est essentielle pour garantir la sécurité et la disponibilité des données.
+Ce projet met en place une architecture event-driven qui automatise la sauvegarde des fichiers d’un dépôt GitHub sur Amazon S3 en utilisant
+AWS CodeBuild et Amazon EventBridge.
 
 ## 🏗️ Architecture
 L'architecture repose sur les services AWS suivants :
@@ -15,7 +17,6 @@ L'architecture repose sur les services AWS suivants :
 ### 1️⃣ Prérequis
 - Un compte AWS avec les permissions adéquates.
 - Un dépôt GitHub contenant des fichiers CloudFormation.
-- AWS CLI configuré avec les bonnes permissions.
 
 ### 2️⃣ Étapes d'installation
 #### 1️⃣ Créer une connexion AWS CodeStar vers GitHub
@@ -76,7 +77,8 @@ phases:
 4. Consulter les logs dans Amazon CloudWatch.
 
 ## 🎯 Conclusion
-Cette solution permet d'automatiser la sauvegarde des fichiers CloudFormation stockés sur GitHub vers S3 en utilisant une architecture event-driven. Elle garantit une récupération rapide et sécurisée des fichiers en cas de besoin.
+Cette solution permet d'automatiser la sauvegarde des fichiers CloudFormation stockés sur GitHub vers S3 en utilisant une architecture event-driven.
+Elle garantit une récupération rapide et sécurisée des fichiers en cas de besoin.
 
 ## 📌 Technologies utilisées
 - AWS CodeBuild
@@ -85,10 +87,4 @@ Cette solution permet d'automatiser la sauvegarde des fichiers CloudFormation st
 - Amazon CloudWatch
 - GitHub
 
-## 📚 Références
-- [AWS CodeBuild Documentation](https://docs.aws.amazon.com/codebuild/)
-- [Amazon EventBridge Documentation](https://docs.aws.amazon.com/eventbridge/)
-- [AWS IAM Documentation](https://docs.aws.amazon.com/iam/)
 
-## 📢 Hashtags
-`#AWS` `#DevOps` `#Automation` `#GitHub` `#S3` `#CodeBuild` `#EventBridge` `#CloudWatch` `#CloudComputing` `#InfrastructureAsCode`
