@@ -2,17 +2,16 @@ version: 0.2
 
 phases:
   install:
-    runtime-versions:
-      python: 3.x
+    commands:
+      - echo "Installation des dépendances"
+
   build:
     commands:
-      - echo "Clonage du repo GitHub..."
-      - git clone $CODEBUILD_SOURCE_REPO Cloudwatch-Automation
-      - cd Cloudwatch-Automation
-      - echo "Recherche du fichier CloudFormation..."
-      - FILE=$(ls *.yaml *.yml | head -n 1)  # Trouve le premier fichier YAML
-      - echo "Fichier trouvé : $FILE"
-      - echo "Compression du fichier..."
-      - zip backup-$(date +%F).zip "$FILE"
-      - echo "Envoi vers S3..."
-      - aws s3 cp backup-$(date +%F).zip s3://automationbucketalph/
+      - echo "Démarrage du build"
+      - mkdir -p output
+      - zip -r output/build.zip ./
+
+  post_build:
+    commands:
+      - echo "Upload vers S3"
+      - aws s3 cp output/build.zip s3://automationbucketalph/
